@@ -82,3 +82,50 @@ Two layout rules exist because breaking them is what produced the defects found 
 - **Routing is stated, not inferred.** Left to itself an orthogonal edge takes the
   shortest path, and the shortest path regularly crosses an icon. Exit side, entry side
   and corners are given explicitly.
+
+## Label size
+
+`make diagram-fonts` enforces this, and it is part of `make check`. The numbers live in
+`scripts/check_diagram_fonts.py`; the standard shared with the sibling repositories is
+`~/.kiro/steering/global-document-readability.md`.
+
+A label is displayed at the size it has **after** the image is scaled down to fit the column it sits
+in, so a wider canvas makes every label smaller. The `fontSize` attribute alone says nothing about
+legibility. Two floors, both required:
+
+| Floor | Value | What it stops |
+|---|---|---|
+| Effective size — `fontSize × min(1, 880 / rendered width)` | **≥ 14px** | A label legible in the editor and not on the page |
+| Source `fontSize` | **≥ 16px** | Meeting the first floor by shrinking the canvas rather than growing the text |
+
+880px is the reader's column on GitHub and on the blog targets. The rendered width comes from the
+exported SVG when one exists, not from `pageWidth`: draw.io crops to content and adds `--border`.
+
+| Canvas width | Required `fontSize` |
+|---|---|
+| ≤ 880px | 16 |
+| 1080px | 18 |
+| 1238px | 20 |
+| 1300px | 21 |
+
+**Widening the canvas raises the floor**, so empty canvas is not free. This interacts with the 220px
+row pitch stated above: that figure was derived from an 80px icon plus a wrapped label at 11px, so a
+label at the floor needs the pitch recomputed rather than the font reduced back.
+
+When a compliant label stops fitting, work down this list. Shrinking the font is not on it.
+
+1. Fold the label to two lines (two-line maximum; never break mid-word).
+2. Move the notes box out of the figure and into body prose as a table.
+3. Narrow the canvas toward 880px and stack elements vertically. Height does not compete for width.
+4. Split the figure.
+5. Abstract — collapse individual resources into the role they play.
+
+### Existing debt
+
+The figures in `diagram-font-debt.txt` predate the gate and do not meet the floor. That file follows
+the same rule as `scripts/known_doc_parity_gaps.txt`: **it may only shrink.** An unlisted violation
+fails, and so does a listed file that now meets the floor, so a repair forces its line out.
+
+Fixing them needs one decision that is not a layout decision — whether each figure's in-image notes
+box moves into the surrounding prose. Kept in the figure, its longest line dictates the canvas width,
+and a wider canvas raises the required font again. Moved out, what remains is relayout.
