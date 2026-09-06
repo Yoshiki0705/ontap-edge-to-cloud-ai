@@ -95,6 +95,8 @@ jobs:
         run: |
           .venv/bin/python scripts/check_diagram_fonts.py --selftest
           .venv/bin/python scripts/check_diagram_fonts.py
+          .venv/bin/python scripts/check_diagram_flow.py --selftest
+          .venv/bin/python scripts/check_diagram_flow.py
 
   pre-commit:
     # .pre-commit-config.yaml configured six hooks that executed nowhere: the CLI
