@@ -22,6 +22,40 @@
 change to one lands in both in the same commit.
 `.github/workflows/agent-output-audit.yml` warns on a heading-count difference.
 
+## Japanese headings are noun phrases
+
+A Japanese section heading at `##` or below is a noun phrase. A heading sits where
+the reader scans for a label; a verb-final, interrogative or predicative heading
+puts a sentence there, so deciding whether the section is the right one takes
+parsing first.
+
+| Avoid | Use |
+|---|---|
+| 自分の環境で確かめる | 自環境での確認手順 |
+| なぜこの区分が必要か | この区分が必要な理由 |
+| 記録されない読み取りがあります | 記録されない読み取りの存在 |
+
+**Nominalising must not drop the assertion.** A heading often carries the finding
+itself. Keep it with a suffix (〜の存在 / 不在 / 成立 / 不成立 / 無効化 / 差 /
+上限 / 理由) or a modifier (未対応の〜 / 既定で無効な〜 / 一方向に保つ〜). A
+heading no suffix can hold is carrying a sentence; move it into the prose.
+
+Out of scope: H1 (the document title in this repository, which is a one-line
+claim), English headings, `#` lines inside code fences, table cells and list
+items. A heading that cannot serve as an index entry — a timeline entry, advice
+whose imperative tone is the content, a stated intention — breaks when
+nominalised; mark the heading line `<!-- allow:heading-style -->` and say in the
+surrounding prose why it is narrative.
+
+Renaming changes the anchor. Find the referrers with
+`grep -rn '](#<old slug>' --include='*.md' .` and fix them in the same commit.
+GitHub serves an unknown fragment as the top of the page, so the referring side
+cannot tell it broke.
+
+```bash
+make headings   # detector self-test, then the whole *.md tree
+```
+
 ## Naming
 
 - First mention **Amazon FSx for NetApp ONTAP**, then **FSx for ONTAP**

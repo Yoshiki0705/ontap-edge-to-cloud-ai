@@ -72,7 +72,7 @@ S3 バケットに付ける access point には無い、FSx for ONTAP 固有の�
 [Creating access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/create-access-points.html) /
 [Accessing your data via Amazon S3 access points](https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/accessing-data-via-s3-access-points.html)
 
-### 認可は 2 層で評価される
+### 認可の 2 層評価
 
 S3 側と ファイルシステム側の両方を通る必要がある。
 
@@ -150,7 +150,7 @@ AWS は 2021 年に S3 バケット名を要求するアプリケーション向
 
 ---
 
-## 5. このリポジトリのどの経路が該当するか
+## 5. このリポジトリで該当する経路
 
 書き込みの向きが 2 つあり、S3 AP の位置づけが逆になります。
 
