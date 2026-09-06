@@ -148,12 +148,16 @@ drift: venv-check ## Every guard that detects a silently-disabled gate
 diagram-fonts: venv-check ## Diagram labels must clear the readability floor
 	$(PY) scripts/check_diagram_fonts.py --selftest >/dev/null
 	$(PY) scripts/check_diagram_fonts.py
+
+diagram-flow: venv-check ## Diagrams must read rightwards and downwards, labels under icons
+	$(PY) scripts/check_diagram_flow.py --selftest >/dev/null
+	$(PY) scripts/check_diagram_flow.py
 agent-config: ## Report unreachable global/workspace steering, skills and hooks
 	@python3 "$$HOME/.kiro/hooks/scripts/validate_agent_config.py"
 
 # ---------------------------------------------------------------------------
 
-check: lint security test drift diagram-fonts ## Everything CI runs
+check: lint security test drift diagram-fonts diagram-flow ## Everything CI runs
 
 precommit-install: ## Point git at .githooks for this repo
 	git config core.hooksPath .githooks
@@ -164,5 +168,6 @@ clean: ## Remove caches and build output
 	find . -name __pycache__ -type d -not -path './$(VENV)/*' -prune -exec rm -rf {} +
 
 .PHONY: help venv-check dev-install tool-versions test test-verbose lint lint-py \
-	lint-cfn headings hygiene security bandit secrets drift agent-config diagram-fonts check \
+	lint-cfn headings hygiene security bandit secrets drift agent-config diagram-fonts \
+	diagram-flow check \
 	precommit-install clean

@@ -424,8 +424,11 @@ def file_path(uri, theme: str) -> Diagram:
     d.box("kc", "Kafka / ClickHouse", 400, 130, 240, 50)
     d.box("dash", "ダッシュボード", 400, 250, 240, 40)
 
-    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 100, 750, uri("fsxn"))
-    d.icon("s3ap", "s3ap", "S3 Access Point", 300, 766, uri("s3ap"), RESOURCE)
+    # The file system and the access point sit on the first cloud row, so all three
+    # consumers are below the access point rather than one of them above it. Bedrock used
+    # to be a row higher, which made the access point's own fan-out point upwards.
+    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 100, 590, uri("fsxn"))
+    d.icon("s3ap", "s3ap", "S3 Access Point", 300, 606, uri("s3ap"), RESOURCE)
     # Three consumers of one access point, fanned into their own rows. Each riser sits in
     # the corridor between the access point's label and the consumers', which is the only
     # vertical space in the row that belongs to no label.
@@ -447,8 +450,11 @@ def file_path(uri, theme: str) -> Diagram:
     # Into the right-hand side at 0.3, not the middle: the sync line arrives at the bottom
     # and two arrowheads on one point read as one arrow. The two edges leaving this sensor
     # exit at different heights, or they overlap for the first 30px and read as one line.
-    d.edge("e2", "vib", "st",
-           exit=(1, 0.8), entry=(1, 0.3), points=[(325, 148), (325, 325)])
+    # Straight down into the box's top-right corner. Routed out to x=325 and back in from
+    # the right, the last leg travelled 100px leftwards -- the only backwards run on the
+    # site band. The camera's write comes in at 0.65 of the same edge, so the two
+    # arrowheads still land on different points.
+    d.edge("e2", "vib", "st", exit=(0.5, 1), entry=(1.0, 0))
     d.edge("e3", "vib", "kc", "イベント", (0, 0, -14),
            exit=(1, 0.3), entry=(0, 0.5), points=[(350, 124), (350, 155)])
     d.edge("e5", "kc", "dash")
@@ -459,11 +465,10 @@ def file_path(uri, theme: str) -> Diagram:
     d.edge("e4", "st", "fsxn", "同期 / 読み取り配信", (-0.55, 116, 0),
            exit=(0.5, 1), entry=(0.5, 0), both=True)
     d.edge("e6", "fsxn", "s3ap", exit=(1, 0.5), entry=(0, 0.5))
-    d.edge("e7", "s3ap", "bed",
-           exit=(1, 0.25), entry=(0, 0.5), points=[(440, 778), (440, 630)])
+    d.edge("e7", "s3ap", "bed", exit=(1, 0.25), entry=(0, 0.5))
     d.edge("e8", "s3ap", "ath", exit=(1, 0.5), entry=(0, 0.5))
     d.edge("e9", "s3ap", "sm",
-           exit=(1, 0.75), entry=(0, 0.5), points=[(470, 802), (470, 950)])
+           exit=(1, 0.75), entry=(0, 0.5), points=[(470, 642), (470, 950)])
     d.edge("e10", "ath", "quick", exit=(1, 0.5), entry=(0, 0.5))
     return d
 
@@ -537,11 +542,11 @@ def pattern01(uri, theme: str) -> Diagram:
     stated at more length in `docs/ja/aws-patterns/01-edge-ai-bedrock.md`; ※7 was not, and
     is now a bullet in that page's 前提と制約 pointing at the table that carries the detail.
     """
-    d = Diagram("pattern-01-edge-ai-bedrock", "Pattern 01", 800, 900, theme)
+    d = Diagram("pattern-01-edge-ai-bedrock", "Pattern 01", 860, 1060, theme)
     d.group("g_edge", "エッジ拠点", 40, 60, 300, 260)
     # 60px of clear air between the groups so the label on the line that crosses the
     # boundary sits in the gap instead of on a dashed border.
-    d.group("g_cloud", "AWS クラウド", 40, 380, 720, 480)
+    d.group("g_cloud", "AWS クラウド", 40, 380, 780, 620)
 
     # Camera above the storage in one column, so the write is a single straight segment.
     d.icon("cam", "camera", "カメラ", 116, 110, uri("camera"), RESOURCE)
@@ -553,9 +558,11 @@ def pattern01(uri, theme: str) -> Diagram:
     d.icon("bed1", "bedrock", "Amazon Bedrock", 610, 460, uri("bedrock"))
     # RESULT_BUCKET in the use-case templates is the shared stack's standard bucket, and
     # Athena reads the verdicts from it.
-    d.icon("s3", "s3", "Amazon Simple\nStorage Service", 100, 700, uri("s3"))
-    d.icon("lam2", "lambda", "AWS Lambda", 440, 700, uri("lambda"))
-    d.icon("sns", "sns", "Amazon Simple\nNotification Service", 610, 700, uri("sns"))
+    # Below the Lambda that writes to it, not to its left. On the left, the verdict edge was
+    # the one line in the figure running back the way it came.
+    d.icon("s3", "s3", "Amazon Simple\nStorage Service", 520, 860, uri("s3"))
+    d.icon("lam2", "lambda", "AWS Lambda", 480, 700, uri("lambda"))
+    d.icon("sns", "sns", "Amazon Simple\nNotification Service", 650, 700, uri("sns"))
 
     d.edge("e1", "cam", "st", "NFS 書き込み", (0, 62, 0))
     # -0.2 along: at the segment's own midpoint the label straddles the cloud group's
@@ -565,12 +572,17 @@ def pattern01(uri, theme: str) -> Diagram:
     d.edge("e4", "s3ap", "lam1", "スクリーニング", (0, 0, -14),
            exit=(1, 0.5), entry=(0, 0.5))
     d.edge("e5", "lam1", "bed1", exit=(1, 0.5), entry=(0, 0.5))
-    # Out to a riser at x=390, clear to the left of every label on both rows, then in from
-    # above. A straight drop would run through this icon's own label.
+    # Out to a riser at x=560, clear to the *right* of every label on both rows, then down
+    # into the next Lambda's top-right corner. A straight drop would run through this icon's
+    # own label; a riser to the left, which is where this one used to be, put a 50px
+    # leftward leg into a figure that otherwise only advances rightwards and downwards.
     d.edge("e6", "lam1", "lam2", "詳細判定", (0, -34, 0),
-           exit=(0, 0.85), entry=(0.5, 0), points=[(390, 528), (390, 660), (480, 660)])
+           exit=(1, 0.5), entry=(1, 0), points=[(560, 500), (560, 700)])
     d.edge("e7", "lam2", "sns", "通知", (0, 0, -14), exit=(1, 0.5), entry=(0, 0.5))
-    d.edge("e8", "lam2", "s3", "判定結果", (0, 0, -14), exit=(0, 0.5), entry=(1, 0.5))
+    # Out to x=560 before dropping: clear of this icon's own label, which occupies the space
+    # directly below it, and clear of the notification icon at x=610.
+    d.edge("e8", "lam2", "s3", "判定結果", (0, 0, -14),
+           exit=(1, 0.5), entry=(1, 0), points=[(600, 740), (600, 860)])
     return d
 
 
@@ -590,40 +602,42 @@ def pattern05(uri, theme: str) -> Diagram:
     markers go with it: a marker whose note is not in the frame reads as a footnote the
     reader is expected to find, and there is nothing to find.
     """
-    d = Diagram("pattern-05-agentic-rag", "Pattern 05", 990, 600, theme)
+    d = Diagram("pattern-05-agentic-rag", "Pattern 05", 990, 900, theme)
     d.group("g_onprem", "既存のファイル共有", 40, 60, 240, 300)
     # 590 wide: the group has to contain the query riser at x=890 and the label centred
     # on it, or the label crosses the boundary. Left edge at 360 keeps the 80px
     # inter-group gap the other figures use, which is where the crossing edge's label sits.
-    d.group("g_cloud", "AWS クラウド", 360, 60, 590, 480)
+    d.group("g_cloud", "AWS クラウド", 360, 60, 590, 780)
 
     d.box("users", "利用者", 60, 110, 200, 40)
     d.box("docs", "文書", 60, 240, 200, 50)
 
-    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 410, 140, uri("fsxn"))
-    d.icon("s3ap", "s3ap", "S3 Access Point", 585, 156, uri("s3ap"), RESOURCE)
+    # Level with the documents that sync into it, so the sync edge does not have to climb.
+    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 410, 240, uri("fsxn"))
+    d.icon("s3ap", "s3ap", "S3 Access Point", 585, 256, uri("s3ap"), RESOURCE)
     # Knowledge Bases by name: that is the integration AWS documents for an access
     # point, via the alias. Plain model invocation has no such walkthrough, and the
     # doc's own mermaid already said Knowledge Bases while this figure did not.
-    d.icon("bed", "bedrock", "Amazon Bedrock\nKnowledge Bases", 750, 140, uri("bedrock"))
-    d.icon("os", "opensearch", "Amazon OpenSearch\nService", 585, 380, uri("opensearch"))
-    d.icon("agent", "agentcore", "Amazon Bedrock\nAgentCore", 750, 380, uri("agentcore"))
+    # Retrieval reads left to right on its own band: the agent asks, the Knowledge Base
+    # answers from the vector store. Drawn with the Knowledge Base on the ingest band above,
+    # three of this figure's seven edges pointed back at it -- the query upwards, the vector
+    # store leftwards, the retrieval leftwards.
+    d.icon("agent", "agentcore", "Amazon Bedrock\nAgentCore", 410, 440, uri("agentcore"))
+    d.icon("bed", "bedrock", "Amazon Bedrock\nKnowledge Bases", 620, 440, uri("bedrock"))
+    d.icon("os", "opensearch", "Amazon OpenSearch\nService", 790, 700, uri("opensearch"))
 
     d.edge("e1", "users", "docs", "NFS / SMB", (0, 44, 0))
-    d.edge("e2", "docs", "fsxn", "同期", (0, 0, -14),
-           exit=(1, 0.5), entry=(0, 0.5), points=[(320, 265), (320, 180)])
+    d.edge("e2", "docs", "fsxn", "同期", (0, 0, -14), exit=(1, 0.5), entry=(0, 0.5))
     d.edge("e3", "fsxn", "s3ap", exit=(1, 0.5), entry=(0, 0.5))
-    d.edge("e4", "s3ap", "bed", "取り込み", (0, 0, -14), exit=(1, 0.5), entry=(0, 0.5))
-    # Leaves Bedrock sideways and comes back over the top of OpenSearch: a straight drop
-    # would run through Bedrock's own label.
-    d.edge("e5", "bed", "os", "ベクトルストア", (0, -60, 0),
-           exit=(0, 0.9), entry=(0.5, 0), points=[(710, 212), (710, 340), (625, 340)])
-    d.edge("e6", "agent", "os", "検索", (0, 0, -14), exit=(0, 0.5), entry=(1, 0.5))
-    # Round the right-hand side rather than up the shared column, which holds both
-    # icons' labels. It enters Bedrock's right side at y=180, above where that label
-    # begins.
-    d.edge("e7", "agent", "bed", "問い合わせ", (0, 0, 0),
-           exit=(1, 0.25), entry=(1, 0.5), points=[(890, 400), (890, 180)])
+    d.edge("e4", "s3ap", "bed", "取り込み", (0, 20, 0), exit=(1, 0.5), entry=(0.25, 0))
+    d.edge("e5", "bed", "os", "ベクトルストア", (0, 0, -14),
+           exit=(1, 0.5), entry=(0.5, 0), points=[(830, 480)])
+    # Under the Knowledge Base rather than through it: the riser is at x=560, right of where
+    # the agent's own two-line label ends, and the horizontal runs at y=740, below where the
+    # Knowledge Base's label ends.
+    d.edge("e6", "agent", "os", "検索", (0.4, 0, -14),
+           exit=(1, 0.85), entry=(0, 0.5), points=[(560, 740), (750, 740)])
+    d.edge("e7", "agent", "bed", "問い合わせ", (0, 0, -14), exit=(1, 0.5), entry=(0, 0.5))
     return d
 
 
