@@ -89,6 +89,12 @@ jobs:
           .venv/bin/python scripts/check_test_coverage_drift.py
           .venv/bin/python scripts/check_dependency_pins.py
           .venv/bin/python scripts/check_sql_interpolation.py
+      - name: Diagram labels clear the readability floor
+        # Its own selftest first: a gate that has never been seen to fail is not
+        # evidence that it can still detect anything.
+        run: |
+          .venv/bin/python scripts/check_diagram_fonts.py --selftest
+          .venv/bin/python scripts/check_diagram_fonts.py
 
   pre-commit:
     # .pre-commit-config.yaml configured six hooks that executed nowhere: the CLI

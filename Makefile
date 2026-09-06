@@ -81,13 +81,22 @@ test-verbose: venv-check ## Run every test directory with -v
 # Lint and security
 # ---------------------------------------------------------------------------
 
-lint: lint-py lint-cfn hygiene ## Run all linters
+lint: lint-py lint-cfn headings hygiene ## Run all linters
 
 lint-py: venv-check ## ruff over PY_DIRS
 	$(RUFF) check $(PY_DIRS)
 
 lint-cfn: venv-check ## cfn-lint over CFN_TEMPLATES
 	$(CFN_LINT) $(CFN_TEMPLATES)
+
+# --selftest runs first and on purpose. A detector whose regex has been loosened
+# still exits 0 over the tree, so a green `make headings` on its own does not say
+# the check can still fail. The self-test asserts both directions — that the
+# sentence forms are flagged and the noun phrases are not — before the tree is
+# inspected.
+headings: ## Japanese section headings must be noun phrases
+	@python3 scripts/check_heading_style.py --selftest >/dev/null
+	@python3 scripts/check_heading_style.py
 
 # The hooks in .pre-commit-config.yaml used to run only in the CI job, so a missing
 # final newline in a generated file was invisible until a PR was opened. pre-commit
@@ -133,12 +142,18 @@ drift: venv-check ## Every guard that detects a silently-disabled gate
 	$(PY) scripts/check_cfn_params_contract.py
 	$(PY) scripts/check_ontap_setup_scripts.py
 
+# Not part of `drift`: that target holds the guards that detect a silently-disabled gate, and this
+# is a content gate rather than one of those. It needs neither the AWS icon package nor draw.io --
+# only the committed .drawio and .svg -- so unlike the diagram build it can run in `check`.
+diagram-fonts: venv-check ## Diagram labels must clear the readability floor
+	$(PY) scripts/check_diagram_fonts.py --selftest >/dev/null
+	$(PY) scripts/check_diagram_fonts.py
 agent-config: ## Report unreachable global/workspace steering, skills and hooks
 	@python3 "$$HOME/.kiro/hooks/scripts/validate_agent_config.py"
 
 # ---------------------------------------------------------------------------
 
-check: lint security test drift ## Everything CI runs
+check: lint security test drift diagram-fonts ## Everything CI runs
 
 precommit-install: ## Point git at .githooks for this repo
 	git config core.hooksPath .githooks
@@ -149,5 +164,5 @@ clean: ## Remove caches and build output
 	find . -name __pycache__ -type d -not -path './$(VENV)/*' -prune -exec rm -rf {} +
 
 .PHONY: help venv-check dev-install tool-versions test test-verbose lint lint-py \
-	lint-cfn hygiene security bandit secrets drift agent-config check \
+	lint-cfn headings hygiene security bandit secrets drift agent-config diagram-fonts check \
 	precommit-install clean
