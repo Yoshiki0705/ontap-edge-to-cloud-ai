@@ -66,7 +66,7 @@ graph LR
 [FlexCache / SnapMirror の比較](../iot-greengrass-flexcache-integration.md) にあります。
 **write-back を使う場合、バージョン要件と本番向けの注意があります**（同 doc）。
 
-### パーティションに拠点を入れる
+### パーティション設計における拠点の位置
 
 ```
 /{データ種別}/site={拠点ID}/year={YYYY}/month={MM}/day={DD}/device={デバイスID}/

@@ -64,6 +64,12 @@ SQL statement — see `cloud/iot_ingestion/identifiers.py`.
 **Bilingual docs.** `docs/ja/` is primary, `docs/en/` mirrors it. Matching
 `## ` structure and count; both change in the same commit.
 
+**Japanese headings.** A section heading at `##` or below is a noun phrase, not a
+sentence, and nominalising it must not drop the assertion it carries. `make
+headings` enforces this; the rule, the exclusions and the
+`<!-- allow:heading-style -->` escape are in
+[docs/agent/reference-doc-quality.md](docs/agent/reference-doc-quality.md).
+
 ## Index — read these when the work calls for it
 
 | Read when | Document |
