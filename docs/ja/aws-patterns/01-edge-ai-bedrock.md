@@ -115,6 +115,10 @@ AgentCore の Runtime / Memory / Gateway を使う選択があります。判断
 - **Greengrass の Stream Manager が S3 AP を受け付けるかは未検証**です
   （[§4](../s3ap-compatibility-matrix.md)）。エッジ側からの書き込みは boto3 の PutObject を
   自前で書く前提になります
+- **判定結果と Athena のクエリ結果は標準の S3 バケットに書きます。** access point ではありません。
+  Athena はクエリ結果の出力先が S3 バケットであることを公式に要求し、判定結果も現在は共有スタックの
+  バケット（`RESULT_BUCKET`）に書いています
+  （[S3 バケット名を要求するサービス](../s3ap-compatibility-matrix.md#4-s3-バケット名を要求するサービス)）
 - **判定精度は合成テストのみ**。実環境の照明・角度・素材色での精度は未検証です
 - **Bedrock のモデル可用性はリージョンで異なります。** 使うモデルが対象リージョンで
   有効化できるかを先に確認してください

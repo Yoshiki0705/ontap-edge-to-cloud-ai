@@ -65,6 +65,12 @@ DRAWIO_BIN = Path("/Applications/draw.io.app/Contents/MacOS/draw.io")
 SERVICE = 80  # official service icon canvas; never rescaled
 RESOURCE = 48  # official resource icon canvas
 
+# Body text in a figure. 16 is the source-size floor in scripts/check_diagram_fonts.py,
+# and every figure here is narrow enough that 16 also clears the effective floor.
+BODY_FONT = 16
+# A group's dashed frame carries its label in bold, one step up, as before at 11/12.
+GROUP_FONT_OFFSET = 1
+
 # Only our own strokes, text and fills change between themes. The AWS icons never do:
 # recolouring one is not permitted, and they read on either background as shipped.
 #
@@ -78,49 +84,37 @@ THEMES = {
     "light": {
         "ink": "#232F3E",
         "canvas": "#FFFFFF",
-        "note_fill": "#F7F7F7",
-        "note_stroke": "#AAB7B8",
         "box_fill": "#FFFFFF",
     },
     # Contrast against the canvas: 12.6:1 for text, well past WCAG AA for body text.
     "dark": {
         "ink": "#D5DBDB",
         "canvas": "#16191F",
-        "note_fill": "#232F3E",
-        "note_stroke": "#5F6B7A",
         "box_fill": "#232F3E",
     },
 }
 
 
-def edge_style(p: dict[str, str]) -> str:
+def edge_style(p: dict[str, str], size: int) -> str:
     return (
         "edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"
         f"endArrow=open;endFill=0;strokeColor={p['ink']};strokeWidth=1;"
-        f"fontSize=11;fontColor={p['ink']};labelBackgroundColor={p['canvas']};"
+        f"fontSize={size};fontColor={p['ink']};labelBackgroundColor={p['canvas']};"
     )
 
 
-def group_style(p: dict[str, str]) -> str:
+def group_style(p: dict[str, str], size: int) -> str:
     return (
         "rounded=0;html=1;dashed=1;dashPattern=8 4;fillColor=none;"
         f"strokeColor={p['ink']};verticalAlign=top;align=left;spacingLeft=8;spacingTop=4;"
-        f"fontSize=12;fontColor={p['ink']};fontStyle=1;"
+        f"fontSize={size};fontColor={p['ink']};fontStyle=1;"
     )
 
 
-def note_style(p: dict[str, str]) -> str:
-    return (
-        f"rounded=0;html=1;whiteSpace=wrap;fillColor={p['note_fill']};"
-        f"strokeColor={p['note_stroke']};align=left;verticalAlign=top;spacing=8;"
-        f"fontSize=11;fontColor={p['ink']};"
-    )
-
-
-def plain_style(p: dict[str, str]) -> str:
+def plain_style(p: dict[str, str], size: int) -> str:
     return (
         f"rounded=1;html=1;whiteSpace=wrap;fillColor={p['box_fill']};"
-        f"strokeColor={p['ink']};fontSize=11;fontColor={p['ink']};"
+        f"strokeColor={p['ink']};fontSize={size};fontColor={p['ink']};"
     )
 
 # Icon paths relative to the extracted asset package. The filename is the authority on
@@ -175,51 +169,24 @@ LABELS = {
     "同期 / 読み取り配信": "Sync / read delivery",
     # Markers tie a note to the thing it qualifies. A note with nothing to point at is
     # read as a general disclaimer, which is not what these say.
-    "エッジ拠点 ※4": "Edge site *4",
-    "セルラー接続（任意）※9": "Cellular connectivity (optional) *9",
-    "SORACOM プラットフォーム": "SORACOM platform",
+    "エッジ拠点": "Edge site",
+    "セルラー接続（任意）": "Cellular connectivity (optional)",
+    "SORACOM\nプラットフォーム": "SORACOM\nplatform",
     "Amazon Bedrock\nKnowledge Bases": "Amazon Bedrock\nKnowledge Bases",
     "Amazon Kinesis\nData Streams": "Amazon Kinesis\nData Streams",
     "Amazon Data\nFirehose": "Amazon Data\nFirehose",
-    "Amazon Simple\nStorage Service ※7": "Amazon Simple\nStorage Service *7",
-    "Amazon\nSageMaker AI ※8": "Amazon\nSageMaker AI *8",
+    "Amazon Simple\nStorage Service": "Amazon Simple\nStorage Service",
+    "Amazon\nSageMaker AI": "Amazon\nSageMaker AI",
     "MQTT": "MQTT",
     "PutObject": "PutObject",
     "テレメトリ": "Telemetry",
-    "AWS クラウド ※5": "AWS Cloud *5",
-    "S3 Access Point\n※1 ※2": "S3 Access Point\n*1 *2",
-    "S3 Access Point\n※3": "S3 Access Point\n*3",
-    "取り込み ※6": "Ingestion *6",
+    "取り込み": "Ingestion",
     "スクリーニング": "Screening",
     "詳細判定": "Detailed verdict",
     "通知": "Notification",
     "判定結果": "Verdicts",
     "検索": "Retrieval",
     "問い合わせ": "Query",
-    "補足": "Notes",
-    "※1 S3 Access Point は ONTAP 9.17.1 以降が必要": "*1 S3 access points require ONTAP 9.17.1 or later",
-    "同一リージョン・同一アカウント・マウント済みボリュームであること": "Same Region, same account, and a mounted volume",
-    "※2 認可は 2 層で評価される": "*2 Authorization is evaluated in two layers",
-    "IAM とファイルシステム権限の両方を通る必要がある": "A request has to pass both IAM and file system permissions",
-    "※3 イベント通知は使えない": "*3 Event notifications are unavailable",
-    "ファイル到着の起点は FPolicy / 明示的な呼び出し / ポーリング": "File arrival is triggered by FPolicy, an explicit call, or polling",
-    "※4 実機テスト未完了": "*4 Hardware testing incomplete",
-    "エッジ側と ONTAP 連携は未検証": "The edge side and ONTAP integration are unverified",
-    "※7 ここは標準の S3 バケットが必要": "*7 A standard S3 bucket is required here",
-    "Athena のクエリ結果の出力先は S3 バケットであることが公式に必須。Amazon Data Firehose の配信先も S3 バケット ARN で、access point を受けるかは未検証":
-        "Athena's query results location is officially required to be an S3 bucket. Firehose also takes an S3 bucket ARN as its destination, and whether it accepts an access point is unverified",
-    "Athena のクエリ結果の出力先は S3 バケットであることが公式に必須。判定結果も現在は共有スタックのバケットに書いている":
-        "Athena's query results location is officially required to be an S3 bucket. Verdicts are currently written to the shared stack's bucket as well",
-    "※8 S3 Access Point 経由の利用に公式手順がない": "*8 No official walkthrough for use via an access point",
-    "※9 この経路は任意で、既定では作られない": "*9 This path is optional and is not created by default",
-    "SoracomOperatorId を指定したときだけ IAM ロールが作られる。SORACOM 側のアカウントが ExternalId 付きでそのロールを引き受け、Kinesis と S3 の raw/ 配下に書く":
-        "The IAM role is created only when SoracomOperatorId is supplied. SORACOM's own account assumes it with that value as the ExternalId and writes to Kinesis and to raw/ in the bucket",
-    "公式手順があるのは Athena / AWS Lambda / AWS Glue / Bedrock Knowledge Bases / EMR Serverless / CloudFront / Transfer Family":
-        "Official walkthroughs exist for Athena, AWS Lambda, AWS Glue, Bedrock Knowledge Bases, EMR Serverless, CloudFront, and Transfer Family",
-    "※5 このリポジトリに実装なし": "*5 No implementation in this repository",
-    "AWS が公式手順を公開している": "AWS publishes an official walkthrough",
-    "※6 権限の非対称に注意": "*6 Mind the permission asymmetry",
-    "単一の資格情報で全文書を取り込むと利用者ごとの区別が失われる": "Ingesting every document under one identity loses the per-user distinction",
 }
 
 # U+203B (※) sits outside every CJK block, so a reference marker would otherwise survive
@@ -255,13 +222,17 @@ class Diagram:
     """Accumulates cells and writes a `.drawio` whose XML is verified after writing."""
 
     def __init__(self, name: str, title: str, width: int, height: int,
-                 theme: str = "light") -> None:
+                 theme: str = "light", font: int = BODY_FONT) -> None:
         self.name = name
         self.title = title
         self.width = width
         self.height = height
         self.theme = theme
         self.p = THEMES[theme]
+        # A label is read at the size it has *after* the image is scaled into the column
+        # it sits in, so the figure's width and this number are one decision, not two.
+        # scripts/check_diagram_fonts.py holds the floors and fails on either.
+        self.font = font
         self.cells: list[str] = []
         self.labels: list[str] = []
 
@@ -271,7 +242,7 @@ class Diagram:
     def group(self, cid: str, label: str, x: int, y: int, w: int, h: int) -> None:
         self.labels.append(label)
         self.cells.append(
-            f'<mxCell id="{cid}" value="{label_html(label)}" style="{group_style(self.p)}" '
+            f'<mxCell id="{cid}" value="{label_html(label)}" style="{group_style(self.p, self.font + GROUP_FONT_OFFSET)}" '
             f'vertex="1" parent="1"><mxGeometry x="{x}" y="{y}" width="{w}" '
             f'height="{h}" as="geometry"/></mxCell>'
         )
@@ -281,7 +252,7 @@ class Diagram:
         self.labels.append(label)
         style = (
             "sketch=0;html=1;shape=image;verticalLabelPosition=bottom;verticalAlign=top;"
-            f"labelPosition=center;align=center;imageAspect=1;aspect=fixed;fontSize=11;"
+            f"labelPosition=center;align=center;imageAspect=1;aspect=fixed;fontSize={self.font};"
             f"fontColor={self.p['ink']};image={uri};"
         )
         self.cells.append(
@@ -293,28 +264,9 @@ class Diagram:
     def box(self, cid: str, label: str, x: int, y: int, w: int, h: int) -> None:
         self.labels.append(label)
         self.cells.append(
-            f'<mxCell id="{cid}" value="{label_html(label)}" style="{plain_style(self.p)}" '
+            f'<mxCell id="{cid}" value="{label_html(label)}" style="{plain_style(self.p, self.font)}" '
             f'vertex="1" parent="1"><mxGeometry x="{x}" y="{y}" width="{w}" '
             f'height="{h}" as="geometry"/></mxCell>'
-        )
-
-    def note(self, cid: str, lines: list[str], x: int, y: int, w: int, h: int) -> None:
-        for line in lines:
-            self.labels.append(line)
-        # Bold headline, detail on the next line, per the figure-annotation convention.
-        #
-        # The markup is escaped in full. An attribute value cannot contain a raw `<`,
-        # so draw.io stores label HTML escaped and unescapes it on read; writing raw
-        # tags here produces a file that fails to parse. The gate in write() caught
-        # exactly that on the first run.
-        parts = [f"<b>{lines[0]}</b>"]
-        for index, line in enumerate(lines[1:]):
-            parts.append(f"<b>{line}</b>" if index % 2 == 0 else line)
-        html = self._value("<br>".join(parts))
-        self.cells.append(
-            f'<mxCell id="{cid}" value="{html}" style="{note_style(self.p)}" vertex="1" '
-            f'parent="1"><mxGeometry x="{x}" y="{y}" width="{w}" height="{h}" '
-            f'as="geometry"/></mxCell>'
         )
 
     def edge(self, cid: str, source: str, target: str, label: str = "",
@@ -338,7 +290,7 @@ class Diagram:
         """
         if label:
             self.labels.append(label)
-        style = edge_style(self.p)
+        style = edge_style(self.p, self.font)
         if exit is not None:
             style += f"exitX={exit[0]};exitY={exit[1]};exitDx=0;exitDy=0;"
         if entry is not None:
@@ -437,221 +389,245 @@ def write_english(xml: str, path: Path) -> None:
 # --------------------------------------------------------------------------------------
 
 
-def overview(uri, theme: str) -> Diagram:
-    """Whole-repository scope: two ingestion paths, one storage spine, three consumers.
+def file_path(uri, theme: str) -> Diagram:
+    """The file-protocol path: an edge site writes files, and the cloud reads them.
 
-    Rows are 220px apart because an icon is 80px and its wrapped label takes up to
-    LABEL_H below it; anything tighter and a label meets the row beneath it.
+    This and `api_paths` are the two halves of what used to be one `architecture-overview`.
+    One figure could not be made readable. Thirteen cloud nodes plus three site groups need
+    roughly 1300px of width at any font size that survives a reader's column, and the
+    labels are the width -- so every attempt to raise the font raised the canvas and lost
+    the same amount again. The split follows the line the README already draws: files
+    written over NFS and read through the access point, against objects written with the S3
+    API. A reader who wants one of them does not need the other in frame.
+
+    The site groups sit *above* the cloud rather than beside it, which is what frees the
+    width. The sync edge therefore leaves `st` downwards -- allowed because `st` is a box,
+    whose label is drawn inside it, unlike an icon whose label occupies the space below.
+
+    The notes box is gone. What it carried is a table under the figure in README.md and
+    README_en.md, where a line can be as long as it needs to be and can link to the page
+    that holds the detail. The ※ markers went with it: a marker pointing at a note that is
+    not in the frame reads as a footnote the reader is expected to hunt for.
     """
-    d = Diagram("architecture-overview", "Architecture overview", 1300, 1330, theme)
-    d.group("g_edge", "エッジ拠点 ※4", 40, 60, 300, 420)
-    d.group("g_onprem", "オンプレミス", 40, 520, 300, 240)
-    d.group("g_cellular", "セルラー接続（任意）※9", 40, 800, 300, 190)
-    # The cloud starts at 500, not 380: the gap has to hold the widest inter-group edge
-    # label, and "同期 / 読み取り配信" is ~140px wide.
-    d.group("g_cloud", "AWS クラウド", 500, 60, 740, 980)
+    d = Diagram("architecture-file-path", "File path", 880, 1100, theme)
+    d.group("g_edge", "エッジ拠点", 40, 60, 300, 350)
+    d.group("g_onprem", "オンプレミス", 380, 60, 280, 350)
+    d.group("g_cloud", "AWS クラウド", 40, 490, 800, 570)
 
-    d.icon("cam", "camera", "カメラ", 100, 110, uri("camera"), RESOURCE)
-    d.icon("vib", "vibration", "振動センサー", 240, 110, uri("vibration"), RESOURCE)
-    d.box("st", "ローカルストレージ", 90, 280, 200, 50)
-    d.box("kc", "Kafka / ClickHouse", 90, 560, 200, 50)
-    d.box("dash", "ダッシュボード", 90, 650, 200, 40)
-    # Not edge equipment: SoracomIngestionRole is assumed by SORACOM's own AWS
-    # account with the Operator ID as ExternalId, so the writer is their platform.
-    # Drawn because this whole path was absent from the figure.
-    d.box("soracom", "SORACOM プラットフォーム", 90, 870, 200, 50)
+    d.icon("cam", "camera", "カメラ", 80, 110, uri("camera"), RESOURCE)
+    # 200, not 220: this label is the widest in the group and the English form
+    # ("Vibration sensor") is wider still, which put its right edge under the riser
+    # carrying the write into local storage.
+    d.icon("vib", "vibration", "振動センサー", 200, 110, uri("vibration"), RESOURCE)
+    # Centred on x=140 so the sync edge into the file system below is one straight segment.
+    d.box("st", "ローカルストレージ", 55, 310, 170, 50)
+    d.box("kc", "Kafka / ClickHouse", 400, 130, 240, 50)
+    d.box("dash", "ダッシュボード", 400, 250, 240, 40)
 
-    # Storage spine, left to right, all centred on y=340 so the arrows are straight.
-    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 550, 300, uri("fsxn"))
-    d.icon("s3ap", "s3ap", "S3 Access Point\n※1 ※2", 720, 316, uri("s3ap"), RESOURCE)
-    # Three consumers of the access point, fanned into their own rows.
-    d.icon("bed", "bedrock", "Amazon Bedrock", 880, 110, uri("bedrock"))
-    d.icon("ath", "athena", "Amazon Athena", 880, 300, uri("athena"))
-    # Marked ※6: the AWS list of services with a published access-point walkthrough
-    # covers Athena, Lambda, Glue, Bedrock Knowledge Bases, EMR Serverless, CloudFront
-    # and Transfer Family. SageMaker AI is not on it, so an unqualified line from the
-    # access point to it would read as a support claim this project cannot make.
-    d.icon("sm", "sagemaker", "Amazon\nSageMaker AI ※8", 880, 500, uri("sagemaker"))
+    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 100, 750, uri("fsxn"))
+    d.icon("s3ap", "s3ap", "S3 Access Point", 300, 766, uri("s3ap"), RESOURCE)
+    # Three consumers of one access point, fanned into their own rows. Each riser sits in
+    # the corridor between the access point's label and the consumers', which is the only
+    # vertical space in the row that belongs to no label.
+    d.icon("bed", "bedrock", "Amazon Bedrock", 540, 590, uri("bedrock"))
+    d.icon("ath", "athena", "Amazon Athena", 540, 750, uri("athena"))
+    # The AWS list of services with a published access-point walkthrough covers Athena,
+    # Lambda, Glue, Bedrock Knowledge Bases, EMR Serverless, CloudFront and Transfer
+    # Family. SageMaker AI is not on it, and the README table under this figure says so --
+    # an unqualified line here would read as a support claim this project cannot make.
+    d.icon("sm", "sagemaker", "Amazon\nSageMaker AI", 540, 910, uri("sagemaker"))
     # The icon package ships only a suite-level Quick icon; the node here is the BI
     # capability, which the docs call Amazon Quick Sight.
-    d.icon("quick", "quick", "Amazon\nQuick Sight", 1030, 300, uri("quick"))
-    # MQTT path, middle row. cloud/iot_ingestion/handler.py puts every object through
-    # the access point — `Bucket=S3AP_ARN` at all three call sites, and its template
-    # declares no bucket at all. This figure used to route it into a standard bucket.
-    d.icon("iot", "iotcore", "AWS IoT Core", 550, 660, uri("iotcore"))
-    d.icon("lam", "lambda", "AWS Lambda", 720, 660, uri("lambda"))
-    # Cellular path, bottom row: cloud/ingestion/template.yaml, the one place a standard
-    # bucket is real. Firehose delivers to DataLakeBucket and Glue crawls it.
-    d.icon("kin", "kinesis", "Amazon Kinesis\nData Streams", 550, 900, uri("kinesis"))
-    d.icon("fh", "firehose", "Amazon Data\nFirehose", 720, 900, uri("firehose"))
-    d.icon("s3", "s3", "Amazon Simple\nStorage Service ※7", 880, 900, uri("s3"))
-    d.icon("glue", "glue", "AWS Glue", 1050, 900, uri("glue"))
+    d.icon("quick", "quick", "Amazon\nQuick Sight", 710, 750, uri("quick"))
 
-    d.edge("e1", "cam", "st", "NFS 書き込み", (0, 26, 0),
-           exit=(1, 0.5), entry=(0.4, 0), points=[(170, 134)])
-    # Lands at 0.3 rather than the middle of the side, which is where the sync line
-    # arrives: two arrowheads on one point read as one arrow.
+    # The label sits on the riser, below where the sensor labels end. Placed on the
+    # horizontal stub instead it lands on top of the vibration sensor's own label.
+    d.edge("e1", "cam", "st", "NFS 書き込み", (0, 50, 0),
+           exit=(1, 0.5), entry=(0.65, 0), points=[(165, 134)])
+    # Into the right-hand side at 0.3, not the middle: the sync line arrives at the bottom
+    # and two arrowheads on one point read as one arrow. The two edges leaving this sensor
+    # exit at different heights, or they overlap for the first 30px and read as one line.
     d.edge("e2", "vib", "st",
-           exit=(1, 0.5), entry=(1, 0.3), points=[(310, 134), (310, 295)])
-    d.edge("e3", "vib", "kc", "イベント", (0, -8, 0),
-           exit=(1, 0.9), entry=(1, 0.5), points=[(330, 153), (330, 585)])
-    # One line with two heads: the edge both pushes new files up and reads cached data
-    # back down, and two separate arrows here overlapped.
-    d.edge("e4", "st", "fsxn", "同期 / 読み取り配信", (0, 0, -14),
-           exit=(1, 0.7), entry=(0, 0.5), points=[(420, 315), (420, 340)], both=True)
+           exit=(1, 0.8), entry=(1, 0.3), points=[(325, 148), (325, 325)])
+    d.edge("e3", "vib", "kc", "イベント", (0, 0, -14),
+           exit=(1, 0.3), entry=(0, 0.5), points=[(350, 124), (350, 155)])
     d.edge("e5", "kc", "dash")
-    d.edge("e6", "fsxn", "s3ap", exit=(1, 0.5), entry=(0, 0.35))
+    # One line with two heads: the site both pushes new files up and reads cached data
+    # back down. The label lands in the 80px gap between the two bands.
+    # -0.55 along, not 0: the midpoint of a segment this long is inside the cloud group,
+    # and a label about the site's own sync belongs in the gap between the two bands.
+    d.edge("e4", "st", "fsxn", "同期 / 読み取り配信", (-0.55, 116, 0),
+           exit=(0.5, 1), entry=(0.5, 0), both=True)
+    d.edge("e6", "fsxn", "s3ap", exit=(1, 0.5), entry=(0, 0.5))
     d.edge("e7", "s3ap", "bed",
-           exit=(1, 0.25), entry=(0, 0.5), points=[(820, 328), (820, 150)])
+           exit=(1, 0.25), entry=(0, 0.5), points=[(440, 778), (440, 630)])
     d.edge("e8", "s3ap", "ath", exit=(1, 0.5), entry=(0, 0.5))
     d.edge("e9", "s3ap", "sm",
-           exit=(1, 0.75), entry=(0, 0.5), points=[(840, 352), (840, 540)])
-    # Shifted 34px left: the midpoint of this line is x=675, which is exactly where the
-    # PutObject riser below passes, and the label sat on top of it.
-    d.edge("e10", "iot", "lam", "MQTT", (0, -34, -10), exit=(1, 0.5), entry=(0, 0.5))
-    # Up the corridor between the file system and the access point, into the left side
-    # of the access point below where the volume line arrives. Two arrowheads on one
-    # point read as one arrow, hence 0.8 against e6's 0.35.
-    d.edge("e11", "lam", "s3ap", "PutObject", (0, 34, 0),
-           exit=(0, 0.5), entry=(0, 0.8), points=[(675, 700), (675, 354)])
-    d.edge("e_soracom", "soracom", "kin", "テレメトリ", (0, 0, -10),
-           exit=(1, 0.5), entry=(0, 0.5), points=[(420, 895), (420, 940)])
-    d.edge("e12", "kin", "fh", exit=(1, 0.5), entry=(0, 0.5))
-    d.edge("e15", "fh", "s3", exit=(1, 0.5), entry=(0, 0.5))
-    d.edge("e16", "s3", "glue", exit=(1, 0.5), entry=(0, 0.5))
-    # Enters Athena from above: the space below an icon belongs to its label. The riser
-    # sits at 1200, clear to the right of both Glue and Quick.
-    d.edge("e13", "glue", "ath",
-           exit=(1, 0.5), entry=(0.5, 0), points=[(1200, 940), (1200, 270), (920, 270)])
-    d.edge("e14", "ath", "quick", exit=(1, 0.5), entry=(0, 0.5))
-
-    d.note(
-        "note",
-        [
-            "補足",
-            "※1 S3 Access Point は ONTAP 9.17.1 以降が必要",
-            "同一リージョン・同一アカウント・マウント済みボリュームであること",
-            "※2 認可は 2 層で評価される",
-            "IAM とファイルシステム権限の両方を通る必要がある",
-            "※4 実機テスト未完了",
-            "エッジ側と ONTAP 連携は未検証",
-            "※7 ここは標準の S3 バケットが必要",
-            "Athena のクエリ結果の出力先は S3 バケットであることが公式に必須。"
-            "Amazon Data Firehose の配信先も S3 バケット ARN で、access point を受けるかは未検証",
-            "※8 S3 Access Point 経由の利用に公式手順がない",
-            "公式手順があるのは Athena / AWS Lambda / AWS Glue / Bedrock Knowledge Bases / "
-            "EMR Serverless / CloudFront / Transfer Family",
-            "※9 この経路は任意で、既定では作られない",
-            "SoracomOperatorId を指定したときだけ IAM ロールが作られる。SORACOM 側のアカウントが "
-            "ExternalId 付きでそのロールを引き受け、Kinesis と S3 の raw/ 配下に書く",
-        ],
-        40, 1070, 1200, 215,
-    )
+           exit=(1, 0.75), entry=(0, 0.5), points=[(470, 802), (470, 950)])
+    d.edge("e10", "ath", "quick", exit=(1, 0.5), entry=(0, 0.5))
     return d
 
 
+def api_paths(uri, theme: str) -> Diagram:
+    """The two paths that write with the S3 API rather than a file protocol.
+
+    The MQTT path puts every object through the access point -- `Bucket=S3AP_ARN` at all
+    three call sites in `cloud/iot_ingestion/handler.py`, and its template declares no
+    bucket at all. The cellular path is the one place a standard bucket is real:
+    `cloud/ingestion/template.yaml` creates `DataLakeBucket`, Firehose delivers to it and
+    Glue crawls it.
+
+    SORACOM is not edge equipment. `SoracomIngestionRole` is assumed by SORACOM's own AWS
+    account with the Operator ID as `ExternalId`, so the writer is their platform, and the
+    whole path is optional -- nothing here is created unless `SoracomOperatorId` is passed.
+    The README table under the figure carries both facts.
+
+    Glue's catalogue is what Athena queries, and Athena is in the file-path figure rather
+    than repeated here. The README flow list states the hand-off; drawing the same service
+    twice across two figures would invite reading them as two different Athenas.
+    """
+    d = Diagram("architecture-api-paths", "API paths", 880, 860, theme)
+    d.group("g_cellular", "セルラー接続（任意）", 40, 60, 300, 150)
+    d.group("g_cloud", "AWS クラウド", 40, 290, 800, 520)
+
+    # The break is written in. Left to wrap, a 170px box splits this at
+    # "プラットフ / ォーム", mid-word, which the official guidance rules out.
+    d.box("soracom", "SORACOM\nプラットフォーム", 45, 105, 190, 50)
+
+    d.icon("kin", "kinesis", "Amazon Kinesis\nData Streams", 100, 390, uri("kinesis"))
+    d.icon("fh", "firehose", "Amazon Data\nFirehose", 300, 390, uri("firehose"))
+    d.icon("s3", "s3", "Amazon Simple\nStorage Service", 500, 390, uri("s3"))
+    d.icon("glue", "glue", "AWS Glue", 700, 390, uri("glue"))
+
+    d.icon("iot", "iotcore", "AWS IoT Core", 100, 630, uri("iotcore"))
+    d.icon("lam", "lambda", "AWS Lambda", 300, 630, uri("lambda"))
+    d.icon("s3ap", "s3ap", "S3 Access Point", 500, 646, uri("s3ap"), RESOURCE)
+    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 680, 630, uri("fsxn"))
+
+    # Just past the group's bottom edge, in the gap. At the segment's own midpoint the
+    # label lands inside the cloud group; pulled all the way to -0.5 it sits on the
+    # dashed border it is meant to be clear of.
+    d.edge("e1", "soracom", "kin", "テレメトリ", (-0.1, 84, 0),
+           exit=(0.5, 1), entry=(0.5, 0))
+    d.edge("e2", "kin", "fh", exit=(1, 0.5), entry=(0, 0.5))
+    d.edge("e3", "fh", "s3", exit=(1, 0.5), entry=(0, 0.5))
+    d.edge("e4", "s3", "glue", exit=(1, 0.5), entry=(0, 0.5))
+    d.edge("e5", "iot", "lam", "MQTT", (0, 0, -14), exit=(1, 0.5), entry=(0, 0.5))
+    d.edge("e6", "lam", "s3ap", "PutObject", (0, 0, -14), exit=(1, 0.5), entry=(0, 0.5))
+    d.edge("e7", "s3ap", "fsxn", exit=(1, 0.5), entry=(0, 0.5))
+    return d
+
+
+
 def pattern01(uri, theme: str) -> Diagram:
-    d = Diagram("pattern-01-edge-ai-bedrock", "Pattern 01", 1160, 830, theme)
-    d.group("g_edge", "エッジ拠点 ※4", 40, 60, 300, 340)
-    # 80px of clear air between the groups so the label on the line that crosses the
+    """The edge group sits *above* the cloud group rather than beside it.
+
+    Side by side, the edge group and the gap after it spend 380px of width that the
+    cloud's four columns then have to fit around, and at BODY_FONT they do not: the labels
+    alone need about 1030px, which arrives in a reader's column at under 14px. Stacked, the
+    same four columns start at x=40 and the whole figure fits in a canvas narrow enough
+    that no downscaling happens at all.
+
+    The cost is that the sync edge now leaves `st` downwards. That is allowed here and only
+    here: `st` is a box, whose label is drawn *inside* it, so nothing sits in the space
+    below. For an icon the label is below the 80px box, which is why an icon is never
+    exited downwards.
+
+    The notes box is gone, and with it the ※3 / ※4 / ※7 markers. ※3 and ※4 were already
+    stated at more length in `docs/ja/aws-patterns/01-edge-ai-bedrock.md`; ※7 was not, and
+    is now a bullet in that page's 前提と制約 pointing at the table that carries the detail.
+    """
+    d = Diagram("pattern-01-edge-ai-bedrock", "Pattern 01", 800, 900, theme)
+    d.group("g_edge", "エッジ拠点", 40, 60, 300, 260)
+    # 60px of clear air between the groups so the label on the line that crosses the
     # boundary sits in the gap instead of on a dashed border.
-    d.group("g_cloud", "AWS クラウド", 420, 60, 680, 540)
+    d.group("g_cloud", "AWS クラウド", 40, 380, 720, 480)
 
-    d.icon("cam", "camera", "カメラ", 100, 110, uri("camera"), RESOURCE)
-    d.box("st", "ローカルストレージ", 90, 260, 200, 50)
+    # Camera above the storage in one column, so the write is a single straight segment.
+    d.icon("cam", "camera", "カメラ", 116, 110, uri("camera"), RESOURCE)
+    d.box("st", "ローカルストレージ", 55, 240, 170, 50)
 
-    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 460, 140, uri("fsxn"))
-    d.icon("s3ap", "s3ap", "S3 Access Point\n※3", 630, 156, uri("s3ap"), RESOURCE)
-    d.icon("lam1", "lambda", "AWS Lambda", 810, 140, uri("lambda"))
-    d.icon("bed1", "bedrock", "Amazon Bedrock", 980, 140, uri("bedrock"))
-    # RESULT_BUCKET in the use-case templates is the shared stack's standard bucket,
-    # and Athena reads the verdicts from it. Marked so the reader is not left to infer
-    # that the access point could serve this and simply was not used.
-    d.icon("s3", "s3", "Amazon Simple\nStorage Service ※7", 530, 420, uri("s3"))
-    d.icon("lam2", "lambda", "AWS Lambda", 810, 420, uri("lambda"))
-    d.icon("sns", "sns", "Amazon Simple\nNotification Service", 980, 420, uri("sns"))
+    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 100, 460, uri("fsxn"))
+    d.icon("s3ap", "s3ap", "S3 Access Point", 270, 476, uri("s3ap"), RESOURCE)
+    d.icon("lam1", "lambda", "AWS Lambda", 440, 460, uri("lambda"))
+    d.icon("bed1", "bedrock", "Amazon Bedrock", 610, 460, uri("bedrock"))
+    # RESULT_BUCKET in the use-case templates is the shared stack's standard bucket, and
+    # Athena reads the verdicts from it.
+    d.icon("s3", "s3", "Amazon Simple\nStorage Service", 100, 700, uri("s3"))
+    d.icon("lam2", "lambda", "AWS Lambda", 440, 700, uri("lambda"))
+    d.icon("sns", "sns", "Amazon Simple\nNotification Service", 610, 700, uri("sns"))
 
-    d.edge("e1", "cam", "st", "NFS 書き込み", (0, 26, 0),
-           exit=(1, 0.5), entry=(0.4, 0), points=[(170, 134)])
-    d.edge("e2", "st", "fsxn", "同期", (0, 0, -14),
-           exit=(1, 0.5), entry=(0, 0.5), points=[(380, 285), (380, 180)])
+    d.edge("e1", "cam", "st", "NFS 書き込み", (0, 62, 0))
+    # -0.2 along: at the segment's own midpoint the label straddles the cloud group's
+    # top border, and a label with a background then reads as a gap in the frame.
+    d.edge("e2", "st", "fsxn", "同期", (-0.2, 24, 0), exit=(0.5, 1), entry=(0.5, 0))
     d.edge("e3", "fsxn", "s3ap", exit=(1, 0.5), entry=(0, 0.5))
     d.edge("e4", "s3ap", "lam1", "スクリーニング", (0, 0, -14),
            exit=(1, 0.5), entry=(0, 0.5))
     d.edge("e5", "lam1", "bed1", exit=(1, 0.5), entry=(0, 0.5))
-    d.edge("e6", "lam1", "lam2", "詳細判定", (0, -40, 0),
-           exit=(0, 0.85), entry=(0.5, 0), points=[(740, 208), (740, 380), (850, 380)])
+    # Out to a riser at x=390, clear to the left of every label on both rows, then in from
+    # above. A straight drop would run through this icon's own label.
+    d.edge("e6", "lam1", "lam2", "詳細判定", (0, -34, 0),
+           exit=(0, 0.85), entry=(0.5, 0), points=[(390, 528), (390, 660), (480, 660)])
     d.edge("e7", "lam2", "sns", "通知", (0, 0, -14), exit=(1, 0.5), entry=(0, 0.5))
     d.edge("e8", "lam2", "s3", "判定結果", (0, 0, -14), exit=(0, 0.5), entry=(1, 0.5))
-
-    d.note(
-        "note",
-        [
-            "補足",
-            "※3 イベント通知は使えない",
-            "ファイル到着の起点は FPolicy / 明示的な呼び出し / ポーリング",
-            "※4 実機テスト未完了",
-            "エッジ側と ONTAP 連携は未検証",
-            "※7 ここは標準の S3 バケットが必要",
-            "Athena のクエリ結果の出力先は S3 バケットであることが公式に必須。"
-            "判定結果も現在は共有スタックのバケットに書いている",
-        ],
-        40, 640, 1060, 160,
-    )
     return d
 
 
 def pattern05(uri, theme: str) -> Diagram:
-    d = Diagram("pattern-05-agentic-rag", "Pattern 05", 1080, 760, theme)
-    d.group("g_onprem", "既存のファイル共有", 40, 60, 300, 300)
-    # Width 600, not 560: the group has to contain the query riser at x=930 and the
-    # label beside it, or the label crosses the boundary. Left edge at 420 leaves the
-    # same 80px inter-group gap as the other figures.
-    d.group("g_cloud", "AWS クラウド ※5", 420, 60, 600, 500)
+    """Ingest across the top band, retrieval across the bottom one.
 
-    d.box("users", "利用者", 100, 110, 180, 40)
-    d.box("docs", "文書", 100, 240, 180, 50)
+    990px wide, not 1080. At BODY_FONT the labels are wider, so the reflex is a wider
+    canvas -- and a wider canvas is scaled down further in the reader's column, which
+    makes every label smaller again. The width comes down instead: the left group is
+    narrowed to what its 200px boxes need, and the query riser is pulled in from 930 to
+    890. That lands the exported figure at ~928px, so 16 arrives at about 15px.
 
-    # Ingest across the top band, retrieval across the bottom one.
-    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 460, 140, uri("fsxn"))
-    d.icon("s3ap", "s3ap", "S3 Access Point", 630, 156, uri("s3ap"), RESOURCE)
+    The notes box is gone. Both items it carried are in
+    `docs/ja/aws-patterns/05-agentic-rag.md` and its English counterpart -- that the
+    repository has no implementation and AWS documents one, and the permission asymmetry
+    -- each already stated at more length than a box in a figure can hold. The ※5 and ※6
+    markers go with it: a marker whose note is not in the frame reads as a footnote the
+    reader is expected to find, and there is nothing to find.
+    """
+    d = Diagram("pattern-05-agentic-rag", "Pattern 05", 990, 600, theme)
+    d.group("g_onprem", "既存のファイル共有", 40, 60, 240, 300)
+    # 590 wide: the group has to contain the query riser at x=890 and the label centred
+    # on it, or the label crosses the boundary. Left edge at 360 keeps the 80px
+    # inter-group gap the other figures use, which is where the crossing edge's label sits.
+    d.group("g_cloud", "AWS クラウド", 360, 60, 590, 480)
+
+    d.box("users", "利用者", 60, 110, 200, 40)
+    d.box("docs", "文書", 60, 240, 200, 50)
+
+    d.icon("fsxn", "fsxn", "Amazon FSx for\nNetApp ONTAP", 410, 140, uri("fsxn"))
+    d.icon("s3ap", "s3ap", "S3 Access Point", 585, 156, uri("s3ap"), RESOURCE)
     # Knowledge Bases by name: that is the integration AWS documents for an access
     # point, via the alias. Plain model invocation has no such walkthrough, and the
     # doc's own mermaid already said Knowledge Bases while this figure did not.
-    d.icon("bed", "bedrock", "Amazon Bedrock\nKnowledge Bases", 810, 140, uri("bedrock"))
-    d.icon("os", "opensearch", "Amazon OpenSearch\nService", 630, 380, uri("opensearch"))
-    d.icon("agent", "agentcore", "Amazon Bedrock\nAgentCore", 810, 380, uri("agentcore"))
+    d.icon("bed", "bedrock", "Amazon Bedrock\nKnowledge Bases", 750, 140, uri("bedrock"))
+    d.icon("os", "opensearch", "Amazon OpenSearch\nService", 585, 380, uri("opensearch"))
+    d.icon("agent", "agentcore", "Amazon Bedrock\nAgentCore", 750, 380, uri("agentcore"))
 
-    d.edge("e1", "users", "docs", "NFS / SMB", (0, 40, 0))
+    d.edge("e1", "users", "docs", "NFS / SMB", (0, 44, 0))
     d.edge("e2", "docs", "fsxn", "同期", (0, 0, -14),
-           exit=(1, 0.5), entry=(0, 0.5), points=[(380, 265), (380, 180)])
+           exit=(1, 0.5), entry=(0, 0.5), points=[(320, 265), (320, 180)])
     d.edge("e3", "fsxn", "s3ap", exit=(1, 0.5), entry=(0, 0.5))
-    d.edge("e4", "s3ap", "bed", "取り込み ※6", (0, 0, -14), exit=(1, 0.5), entry=(0, 0.5))
+    d.edge("e4", "s3ap", "bed", "取り込み", (0, 0, -14), exit=(1, 0.5), entry=(0, 0.5))
     # Leaves Bedrock sideways and comes back over the top of OpenSearch: a straight drop
     # would run through Bedrock's own label.
-    d.edge("e5", "bed", "os", "ベクトルストア", (0, -56, 0),
-           exit=(0, 0.9), entry=(0.5, 0), points=[(760, 212), (760, 340), (670, 340)])
+    d.edge("e5", "bed", "os", "ベクトルストア", (0, -60, 0),
+           exit=(0, 0.9), entry=(0.5, 0), points=[(710, 212), (710, 340), (625, 340)])
     d.edge("e6", "agent", "os", "検索", (0, 0, -14), exit=(0, 0.5), entry=(1, 0.5))
     # Round the right-hand side rather than up the shared column, which holds both
-    # icons' labels.
-    d.edge("e7", "agent", "bed", "問い合わせ", (0, 44, 0),
-           exit=(1, 0.25), entry=(1, 0.5), points=[(930, 400), (930, 180)])
-
-    d.note(
-        "note",
-        [
-            "補足",
-            "※5 このリポジトリに実装なし",
-            "AWS が公式手順を公開している",
-            "※6 権限の非対称に注意",
-            "単一の資格情報で全文書を取り込むと利用者ごとの区別が失われる",
-        ],
-        40, 600, 980, 130,
-    )
+    # icons' labels. It enters Bedrock's right side at y=180, above where that label
+    # begins.
+    d.edge("e7", "agent", "bed", "問い合わせ", (0, 0, 0),
+           exit=(1, 0.25), entry=(1, 0.5), points=[(890, 400), (890, 180)])
     return d
 
 
-DEFINITIONS = (overview, pattern01, pattern05)
+DEFINITIONS = (file_path, api_paths, pattern01, pattern05)
 
 
 def run_export(source: Path, target: Path, extra: list[str]) -> None:

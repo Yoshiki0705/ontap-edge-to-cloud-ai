@@ -1,18 +1,20 @@
 # Architecture diagrams
 
-Three figures drawn with the official AWS Architecture Icons, in Japanese and English.
+Four figures drawn with the official AWS Architecture Icons, in Japanese and English.
 The `.drawio` files here are **generated** — edit
 [`scripts/build_diagrams.py`](../../scripts/build_diagrams.py) and rebuild, never the XML.
 
 | Figure | Source | SVG (adapts to light/dark) | PNG light (2x) | PNG dark (2x) |
 |---|---|---|---|---|
-| Overall architecture | [ja](architecture-overview.drawio) / [en](architecture-overview-en.drawio) | [ja](../images/architecture-overview.svg) / [en](../images/architecture-overview-en.svg) | [ja](../images/png/architecture-overview@2x.png) / [en](../images/png/architecture-overview-en@2x.png) | [ja](../images/png/architecture-overview-dark@2x.png) / [en](../images/png/architecture-overview-en-dark@2x.png) |
+| File path — NFS in, access point out | [ja](architecture-file-path.drawio) / [en](architecture-file-path-en.drawio) | [ja](../images/architecture-file-path.svg) / [en](../images/architecture-file-path-en.svg) | [ja](../images/png/architecture-file-path@2x.png) / [en](../images/png/architecture-file-path-en@2x.png) | [ja](../images/png/architecture-file-path-dark@2x.png) / [en](../images/png/architecture-file-path-en-dark@2x.png) |
+| API paths — MQTT and cellular | [ja](architecture-api-paths.drawio) / [en](architecture-api-paths-en.drawio) | [ja](../images/architecture-api-paths.svg) / [en](../images/architecture-api-paths-en.svg) | [ja](../images/png/architecture-api-paths@2x.png) / [en](../images/png/architecture-api-paths-en@2x.png) | [ja](../images/png/architecture-api-paths-dark@2x.png) / [en](../images/png/architecture-api-paths-en-dark@2x.png) |
 | Pattern 01 — edge AI + Amazon Bedrock | [ja](pattern-01-edge-ai-bedrock.drawio) / [en](pattern-01-edge-ai-bedrock-en.drawio) | [ja](../images/pattern-01-edge-ai-bedrock.svg) / [en](../images/pattern-01-edge-ai-bedrock-en.svg) | [ja](../images/png/pattern-01-edge-ai-bedrock@2x.png) / [en](../images/png/pattern-01-edge-ai-bedrock-en@2x.png) | [ja](../images/png/pattern-01-edge-ai-bedrock-dark@2x.png) / [en](../images/png/pattern-01-edge-ai-bedrock-en-dark@2x.png) |
 | Pattern 05 — agentic RAG | [ja](pattern-05-agentic-rag.drawio) / [en](pattern-05-agentic-rag-en.drawio) | [ja](../images/pattern-05-agentic-rag.svg) / [en](../images/pattern-05-agentic-rag-en.svg) | [ja](../images/png/pattern-05-agentic-rag@2x.png) / [en](../images/png/pattern-05-agentic-rag-en@2x.png) | [ja](../images/png/pattern-05-agentic-rag-dark@2x.png) / [en](../images/png/pattern-05-agentic-rag-en-dark@2x.png) |
 
-The reference numbers in the figures (`※1`, `*1`, …) point at the notes box in the same
-figure. They mark constraints that change how the architecture has to be built, and
-`※4` / `*4` marks the parts of the path that have not run against real hardware.
+No figure carries a notes box or a `※` marker. The constraints they used to state are in
+the prose around each figure — the table under figure 1 in the READMEs, and the 前提と制約
+sections of the pattern pages. See [No figure carries a notes box](#no-figure-carries-a-notes-box)
+for why.
 
 ## Which file to reference
 
@@ -76,9 +78,11 @@ never rescaled. Labels use the current official service names.
 
 Two layout rules exist because breaking them is what produced the defects found in review:
 
-- **A label sits below its icon, so nothing else may.** An edge never leaves a box
-  downwards; it exits the side and turns. Rows are 220px apart, which is the 80px icon
-  plus the room a wrapped label needs.
+- **A label sits below its icon, so nothing else may.** An edge never leaves an *icon*
+  downwards; it exits the side and turns. A `box` is the exception, and only because its
+  label is drawn inside it — `st` is exited downwards in two figures for that reason.
+  Rows are 160 to 240px apart depending on whether the labels below them wrap to two
+  lines; the 80px icon plus a two-line label at 16px needs about 130px before any gap.
 - **Routing is stated, not inferred.** Left to itself an orthogonal edge takes the
   shortest path, and the shortest path regularly crosses an icon. Exit side, entry side
   and corners are given explicitly.
@@ -108,9 +112,9 @@ exported SVG when one exists, not from `pageWidth`: draw.io crops to content and
 | 1238px | 20 |
 | 1300px | 21 |
 
-**Widening the canvas raises the floor**, so empty canvas is not free. This interacts with the 220px
-row pitch stated above: that figure was derived from an 80px icon plus a wrapped label at 11px, so a
-label at the floor needs the pitch recomputed rather than the font reduced back.
+**Widening the canvas raises the floor**, so empty canvas is not free. It also interacts with the row
+pitch: the old 220px figure was derived from an 80px icon plus a wrapped label at 11px, and a label at
+the floor needs the pitch recomputed rather than the font reduced back.
 
 When a compliant label stops fitting, work down this list. Shrinking the font is not on it.
 
@@ -120,12 +124,25 @@ When a compliant label stops fitting, work down this list. Shrinking the font is
 4. Split the figure.
 5. Abstract — collapse individual resources into the role they play.
 
-### Existing debt
+### No figure carries a notes box
 
-The figures in `diagram-font-debt.txt` predate the gate and do not meet the floor. That file follows
-the same rule as `scripts/known_doc_parity_gaps.txt`: **it may only shrink.** An unlisted violation
-fails, and so does a listed file that now meets the floor, so a repair forces its line out.
+Step 2 of that list has been applied to all of them, so `diagram-font-debt.txt` is gone. Every figure
+is built at `BODY_FONT = 16` on a canvas between 758 and 948px, and what the ※-marked boxes used to
+say is now in the prose around each figure: a table under figure 1 in `README.md` and `README_en.md`,
+and the 前提と制約 sections of the pattern pages.
 
-Fixing them needs one decision that is not a layout decision — whether each figure's in-image notes
-box moves into the surrounding prose. Kept in the figure, its longest line dictates the canvas width,
-and a wider canvas raises the required font again. Moved out, what remains is relayout.
+Two consequences are worth stating, because both were the reason the boxes looked cheap:
+
+- **A note fixed the canvas width at its own longest line.** The overview's box needed 1200px, which
+  set the figure at 1300px, which is scaled to 0.68 in a reader's column — so the annotation was
+  taking legibility from every label in the figure to buy its own.
+- **The ※ markers were a second thing to keep in step.** They were numbered globally, across figures,
+  because two figures sit next to each other in the README and a ※5 meaning two different things
+  reads as one note. That had already happened once.
+
+The one figure that could not be fixed by relayout was `architecture-overview`, which is now
+`architecture-file-path` and `architecture-api-paths`. Thirteen cloud nodes and three site groups
+need about 1300px at any font that survives the column, and the labels *are* the width — so raising
+the font raised the canvas and gave the same amount back. It is split along the line the README
+already drew: files written over NFS and read through the access point, against objects written with
+the S3 API.

@@ -120,6 +120,10 @@ Figures live in the [deployment guide](../deployment-guide.md). Here, only what 
 - **Whether Greengrass Stream Manager accepts an S3 access point is unverified**
   ([§4](../s3ap-compatibility-matrix.md)). Writing from the edge assumes a hand-written boto3
   PutObject
+- **Verdicts and Athena's query results are written to a standard S3 bucket**, not to the access
+  point. Athena officially requires its query results location to be an S3 bucket, and verdicts
+  currently go to the shared stack's bucket (`RESULT_BUCKET`) as well
+  ([Services that require an S3 bucket name](../s3ap-compatibility-matrix.md#4-services-that-require-an-s3-bucket-name))
 - **Accuracy is from synthetic tests only.** Accuracy under real lighting, angle and material colour
   is unverified
 - **Bedrock model availability differs by Region.** Confirm the model you intend to use can be

@@ -735,7 +735,15 @@ def test_sunset_blocks_when_it_finds_no_documents_at_all(tmp_path):
 # check_diagram_assets.py
 # ---------------------------------------------------------------------------
 
-FIGURES = ("architecture-overview", "pattern-01-edge-ai-bedrock", "pattern-05-agentic-rag")
+# Mirrors FIGURES in scripts/check_diagram_assets.py. Kept as its own literal on purpose:
+# importing the checker's tuple would make every case here pass whatever that tuple became,
+# including an empty one.
+FIGURES = (
+    "architecture-file-path",
+    "architecture-api-paths",
+    "pattern-01-edge-ai-bedrock",
+    "pattern-05-agentic-rag",
+)
 
 _DRAWIO = '<mxfile><diagram name="x"><root><mxCell id="0"/></root></diagram></mxfile>'
 
@@ -761,7 +769,7 @@ def test_diagram_assets_allow_a_complete_set(tmp_path):
     _diagram_fixture(tmp_path)
     result = run_guard(tmp_path, "check_diagram_assets.py")
     assert result.returncode == 0, result.stderr
-    assert "24 artifacts" in result.stdout
+    assert "32 artifacts" in result.stdout
 
 
 def test_diagram_assets_block_a_committed_icon_library_file(tmp_path):
@@ -785,10 +793,10 @@ def test_diagram_assets_block_a_figure_never_re_exported(tmp_path):
 def test_diagram_assets_block_a_missing_dark_png(tmp_path):
     """Adding the dark theme is the kind of change that lands for one figure only."""
     _diagram_fixture(tmp_path)
-    (tmp_path / "docs" / "images" / "png" / "architecture-overview-en-dark@2x.png").unlink()
+    (tmp_path / "docs" / "images" / "png" / "architecture-file-path-en-dark@2x.png").unlink()
     result = run_guard(tmp_path, "check_diagram_assets.py")
     assert result.returncode == 1
-    assert "architecture-overview-en-dark@2x.png: missing" in result.stderr
+    assert "architecture-file-path-en-dark@2x.png: missing" in result.stderr
 
 
 def test_diagram_assets_do_not_require_a_dark_svg(tmp_path):
@@ -801,7 +809,7 @@ def test_diagram_assets_do_not_require_a_dark_svg(tmp_path):
 
 def test_diagram_assets_block_an_empty_export(tmp_path):
     _diagram_fixture(tmp_path)
-    (tmp_path / "docs" / "images" / "png" / "architecture-overview@2x.png").write_bytes(b"")
+    (tmp_path / "docs" / "images" / "png" / "architecture-file-path@2x.png").write_bytes(b"")
     result = run_guard(tmp_path, "check_diagram_assets.py")
     assert result.returncode == 1
     assert "empty" in result.stderr
@@ -809,12 +817,12 @@ def test_diagram_assets_block_an_empty_export(tmp_path):
 
 def test_diagram_assets_block_japanese_left_in_an_english_artifact(tmp_path):
     _diagram_fixture(tmp_path)
-    (tmp_path / "docs" / "images" / "architecture-overview-en.svg").write_text(
+    (tmp_path / "docs" / "images" / "architecture-file-path-en.svg").write_text(
         "<svg>エッジ拠点</svg>", encoding="utf-8"
     )
     result = run_guard(tmp_path, "check_diagram_assets.py")
     assert result.returncode == 1
-    assert "architecture-overview-en.svg" in result.stderr
+    assert "architecture-file-path-en.svg" in result.stderr
 
 
 def test_diagram_assets_block_a_reference_marker_left_untranslated(tmp_path):
@@ -832,7 +840,7 @@ def test_diagram_assets_block_a_reference_marker_left_untranslated(tmp_path):
 
 def test_diagram_assets_block_unparseable_drawio(tmp_path):
     _diagram_fixture(tmp_path)
-    (tmp_path / "docs" / "diagrams" / "architecture-overview.drawio").write_text(
+    (tmp_path / "docs" / "diagrams" / "architecture-file-path.drawio").write_text(
         '<mxfile><diagram name="x">', encoding="utf-8"
     )
     result = run_guard(tmp_path, "check_diagram_assets.py")
