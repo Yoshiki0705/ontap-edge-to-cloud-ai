@@ -43,9 +43,17 @@ collected under [About this repository](#about-this-repository).
 
 ## Architecture
 
-![Files written by cameras and vibration sensors at an edge site are aggregated through local storage into Amazon FSx for NetApp ONTAP, and reach Amazon Bedrock and Amazon Athena through an S3 access point, with Amazon SageMaker AI marked unverified because AWS publishes no walkthrough for it. The MQTT path through AWS IoT Core and AWS Lambda puts objects through the same access point. Only the cellular path goes through Amazon Kinesis Data Streams and Amazon Data Firehose into a standard S3 bucket, which AWS Glue reads](docs/images/architecture-overview-en.svg)
+![Files written by cameras and vibration sensors at an edge site are aggregated through local storage into Amazon FSx for NetApp ONTAP, and reach Amazon Bedrock, Amazon Athena and Amazon SageMaker AI through an S3 access point. Amazon Quick Sight follows Athena, and on the on-premises side the vibration sensor's events pass through Kafka and ClickHouse to dashboards](docs/images/architecture-file-path-en.svg)
 
-Figure 1: overall architecture ([.drawio](docs/diagrams/architecture-overview-en.drawio) / [日本語](docs/images/architecture-overview.svg))
+Figure 1: the file path — written over NFS, read through an S3 access point ([.drawio](docs/diagrams/architecture-file-path-en.drawio) / [日本語](docs/images/architecture-file-path.svg))
+
+![The MQTT path through AWS IoT Core and AWS Lambda puts objects through an S3 access point and lands them in Amazon FSx for NetApp ONTAP. The cellular path goes from the SORACOM platform through Amazon Kinesis Data Streams and Amazon Data Firehose into a standard S3 bucket, which AWS Glue reads](docs/images/architecture-api-paths-en.svg)
+
+Figure 2: the two paths that write over the S3 API — MQTT and cellular ([.drawio](docs/diagrams/architecture-api-paths-en.drawio) / [日本語](docs/images/architecture-api-paths.svg))
+
+**There are two figures because writes arrive from two directions.** In one figure the
+thirteen cloud nodes sit in a single row, and scaled into a reader's column their labels
+arrive at the equivalent of 8px.
 
 **Data paths:**
 - **Payload** (images, CSV, logs): edge → NFS → ONTAP (source of truth)
@@ -65,6 +73,20 @@ A standard S3 bucket remains on the cellular path only, for two reasons: Amazon 
 Firehose takes an S3 bucket ARN as its destination (whether it accepts an access point is
 unverified), and Amazon Athena's query results location is officially required to be an S3
 bucket. See [S3 AP compatibility and limits](docs/en/s3ap-compatibility-matrix.md).
+
+**Constraints a figure cannot draw:** a figure shows paths, and the six below do not take the
+shape of a line. They used to sit in a notes box inside the figure, but a box's longest line
+fixed the figure's width, and a wider figure is scaled down further in a reader's column — so
+the annotation was taking legibility from every other label to buy its own.
+
+| Constraint | What it says | Detail |
+|---|---|---|
+| S3 access point prerequisites | ONTAP 9.17.1 or later, same Region, same account, and a mounted volume | [Prerequisites and structural constraints](docs/en/s3ap-compatibility-matrix.md#2-prerequisites-and-structural-constraints) |
+| Authorization is two layers | A request has to pass both IAM and file system permissions | [Authorization is evaluated in two layers](docs/en/s3ap-compatibility-matrix.md#authorization-is-evaluated-in-two-layers) |
+| Where a standard S3 bucket is required | Athena's query results location is officially an S3 bucket. Firehose also takes an S3 bucket ARN, and whether it accepts an access point is unverified | [Services that require an S3 bucket name](docs/en/s3ap-compatibility-matrix.md#4-services-that-require-an-s3-bucket-name) |
+| Amazon SageMaker AI has no walkthrough | Official walkthroughs via an access point exist for Athena, AWS Lambda, AWS Glue, Bedrock Knowledge Bases, EMR Serverless, CloudFront and Transfer Family | [AWS services usable through an S3 access point](docs/en/s3ap-compatibility-matrix.md#1-aws-services-usable-through-an-s3-access-point) |
+| The cellular path is optional | The IAM role is created only when `SoracomOperatorId` is supplied. SORACOM's own account assumes it with that value as the `ExternalId` and writes to Kinesis and to `raw/` in the bucket | [Deployment guide](docs/en/deployment-guide.md) |
+| Hardware testing incomplete | The edge side and the ONTAP integration are unverified | [Verification status](docs/en/verification-status.md) |
 
 ## The problem
 

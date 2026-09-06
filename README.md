@@ -42,9 +42,16 @@
 
 ## アーキテクチャ
 
-![エッジ拠点のカメラと振動センサーが書いたファイルをローカルストレージ経由で Amazon FSx for NetApp ONTAP に集約し、S3 Access Point から Amazon Bedrock と Amazon Athena に渡し、Amazon SageMaker AI へは公式手順がないため未検証と注記した構成。AWS IoT Core と AWS Lambda を通る MQTT 経路も同じ S3 Access Point に PutObject する。セルラー経路だけは Amazon Kinesis Data Streams と Amazon Data Firehose を経由して標準の S3 バケットに書き、AWS Glue が読む](docs/images/architecture-overview.svg)
+![エッジ拠点のカメラと振動センサーが書いたファイルをローカルストレージ経由で Amazon FSx for NetApp ONTAP に集約し、S3 Access Point から Amazon Bedrock、Amazon Athena、Amazon SageMaker AI に渡す構成。Athena の先には Amazon Quick Sight が続き、オンプレミス側では振動センサーのイベントが Kafka と ClickHouse を通ってダッシュボードに出る](docs/images/architecture-file-path.svg)
 
-図 1: 全体アーキテクチャ（[.drawio](docs/diagrams/architecture-overview.drawio) / [English](docs/images/architecture-overview-en.svg)）
+図 1: ファイル経路 — NFS で書き、S3 Access Point で読む（[.drawio](docs/diagrams/architecture-file-path.drawio) / [English](docs/images/architecture-file-path-en.svg)）
+
+![AWS IoT Core と AWS Lambda を通る MQTT 経路が S3 Access Point に PutObject して Amazon FSx for NetApp ONTAP に着地する構成と、SORACOM プラットフォームから Amazon Kinesis Data Streams、Amazon Data Firehose を経由して標準の S3 バケットに書き AWS Glue が読むセルラー経路](docs/images/architecture-api-paths.svg)
+
+図 2: S3 API で書く 2 経路 — MQTT とセルラー（[.drawio](docs/diagrams/architecture-api-paths.drawio) / [English](docs/images/architecture-api-paths-en.svg)）
+
+**図が 2 枚なのは、書き込みの方向が 2 つあるからです。** 1 枚に収めると 13 個のクラウド
+ノードが横に並び、読者のカラム幅に入れたときにラベルが 8px 相当まで縮みます。
 
 **データの流れ:**
 - **ペイロード** (画像、CSV、ログ): エッジ → NFS → ONTAP (正本データ)
@@ -63,6 +70,19 @@ S3 API で書いて ONTAP を正本データにする経路（`cloud/iot_ingesti
 配信先が S3 バケット ARN であること（access point を受けるかは未検証）と、Amazon Athena の
 クエリ結果の出力先が S3 バケットであることが公式に必須であることです。詳細は
 [S3 AP 互換性と制約](docs/ja/s3ap-compatibility-matrix.md)。
+
+**図に描けない制約:** 図は経路を示すもので、次の 6 点は線の形では表せません。以前は図の中の
+補足ボックスに入れていましたが、ボックスの最長行が図の幅を決め、幅が広い図は読者のカラムで
+より強く縮むため、注記が図の全ラベルから読みやすさを奪う形になっていました。
+
+| 制約 | 内容 | 詳細 |
+|---|---|---|
+| S3 Access Point の前提 | ONTAP 9.17.1 以降、同一リージョン、同一アカウント、マウント済みボリューム | [前提と構成上の制約](docs/ja/s3ap-compatibility-matrix.md#2-前提と構成上の制約) |
+| 認可は 2 層 | IAM とファイルシステム権限の両方を通る必要がある | [認可の 2 層評価](docs/ja/s3ap-compatibility-matrix.md#認可の-2-層評価) |
+| 標準の S3 バケットが必要な箇所 | Athena のクエリ結果は公式に S3 バケット必須。Firehose の配信先も S3 バケット ARN で、access point を受けるかは未検証 | [S3 バケット名を要求するサービス](docs/ja/s3ap-compatibility-matrix.md#4-s3-バケット名を要求するサービス) |
+| Amazon SageMaker AI は公式手順なし | access point 経由の公式手順があるのは Athena / AWS Lambda / AWS Glue / Bedrock Knowledge Bases / EMR Serverless / CloudFront / Transfer Family | [S3 AP 経由で使える AWS サービス](docs/ja/s3ap-compatibility-matrix.md#1-s3-ap-経由で使える-aws-サービス) |
+| セルラー経路は任意 | `SoracomOperatorId` を指定したときだけ IAM ロールが作られる。SORACOM 側のアカウントがその値を `ExternalId` として引き受け、Kinesis と バケットの `raw/` 配下に書く | [デプロイガイド](docs/ja/deployment-guide.md) |
+| 実機テスト未完了 | エッジ側と ONTAP 連携は未検証 | [検証状態](docs/ja/verification-status.md) |
 
 ## 解決したい課題
 

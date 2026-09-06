@@ -41,7 +41,8 @@ IMAGE_DIR = REPO_ROOT / "docs" / "images"
 PNG_DIR = IMAGE_DIR / "png"
 
 FIGURES = (
-    "architecture-overview",
+    "architecture-file-path",
+    "architecture-api-paths",
     "pattern-01-edge-ai-bedrock",
     "pattern-05-agentic-rag",
 )
